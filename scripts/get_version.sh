@@ -31,6 +31,9 @@ set -eu
 version=$(sed -n -E -e 's/^\s*set\(PROJECT_VERSION "([0-9.]+)"\)\s*$/\1/p' "$(dirname "$0")/../CMakeLists.txt")
 
 # Sanity check. Sed does not fail if it does not find a match or finds more than one.
-[[ $version =~ ^[0-9.]+$ ]] || { echo "Failed to find version in CMakeLists.txt"; exit 1; }
+[[ $version =~ ^[0-9.]+$ ]] || {
+    echo "Failed to find version in CMakeLists.txt"
+    exit 1
+}
 
 echo "$version"

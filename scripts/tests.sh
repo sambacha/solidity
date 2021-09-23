@@ -30,7 +30,7 @@ set -e
 
 REPO_ROOT="$(dirname "$0")/.."
 SOLIDITY_BUILD_DIR="${SOLIDITY_BUILD_DIR:-${REPO_ROOT}/build}"
-IFS=" " read -r -a SMT_FLAGS <<< "$SMT_FLAGS"
+IFS=" " read -r -a SMT_FLAGS <<<"$SMT_FLAGS"
 
 # shellcheck source=scripts/common.sh
 source "${REPO_ROOT}/scripts/common.sh"
@@ -42,8 +42,7 @@ cleanup() {
     # ensure failing commands don't cause termination during cleanup (especially within safe_kill)
     set +e
 
-    if [[ -n "$CMDLINE_PID" ]]
-    then
+    if [[ -n "$CMDLINE_PID" ]]; then
         safe_kill "$CMDLINE_PID" "Commandline tests"
     fi
 
@@ -54,28 +53,27 @@ trap cleanup INT TERM
 
 log_directory=""
 no_smt=""
-while [[ $# -gt 0 ]]
-do
+while [[ $# -gt 0 ]]; do
     case "$1" in
-        --junit_report)
-            if [ -z "$2" ]
-            then
-                echo "Usage: $0 [--junit_report <report_directory>] [--no-smt]"
-                exit 1
-            else
-                log_directory="$2"
-            fi
-            shift
-            shift
-            ;;
-        --no-smt)
-            no_smt="--no-smt"
-            SMT_FLAGS+=(--no-smt)
-            shift
-            ;;
-        *)
+    --junit_report)
+        if [ -z "$2" ]; then
             echo "Usage: $0 [--junit_report <report_directory>] [--no-smt]"
             exit 1
+        else
+            log_directory="$2"
+        fi
+        shift
+        shift
+        ;;
+    --no-smt)
+        no_smt="--no-smt"
+        SMT_FLAGS+=(--no-smt)
+        shift
+        ;;
+    *)
+        echo "Usage: $0 [--junit_report <report_directory>] [--no-smt]"
+        exit 1
+        ;;
     esac
 done
 
@@ -84,51 +82,40 @@ printTask "Testing Python scripts..."
 
 printTask "Running commandline tests..."
 # Only run in parallel if this is run on CI infrastructure
-if [[ -n "$CI" ]]
-then
+if [[ -n "$CI" ]]; then
     "$REPO_ROOT/test/cmdlineTests.sh" &
     CMDLINE_PID=$!
 else
-    if ! "$REPO_ROOT/test/cmdlineTests.sh" "$no_smt"
-    then
+    if ! "$REPO_ROOT/test/cmdlineTests.sh" "$no_smt"; then
         printError "Commandline tests FAILED"
         exit 1
     fi
 fi
 
-
 EVM_VERSIONS="homestead byzantium"
 
-if [ -z "$CI" ]
-then
+if [ -z "$CI" ]; then
     EVM_VERSIONS+=" constantinople petersburg istanbul berlin london"
 fi
 
 # And then run the Solidity unit-tests in the matrix combination of optimizer / no optimizer
 # and homestead / byzantium VM
-for optimize in "" "--optimize"
-do
-    for vm in $EVM_VERSIONS
-    do
+for optimize in "" "--optimize"; do
+    for vm in $EVM_VERSIONS; do
         FORCE_ABIV1_RUNS="no"
-        if [[ "$vm" == "london" ]]
-        then
+        if [[ "$vm" == "london" ]]; then
             FORCE_ABIV1_RUNS="no yes" # run both in london
         fi
-        for abiv1 in $FORCE_ABIV1_RUNS
-        do
+        for abiv1 in $FORCE_ABIV1_RUNS; do
             force_abiv1_flag=()
-            if [[ "$abiv1" == "yes" ]]
-            then
+            if [[ "$abiv1" == "yes" ]]; then
                 force_abiv1_flag=(--abiencoderv1)
             fi
             printTask "--> Running tests using $optimize --evm-version $vm ${force_abiv1_flag[*]}..."
 
             log=()
-            if [ -n "$log_directory" ]
-            then
-                if [ -n "$optimize" ]
-                then
+            if [ -n "$log_directory" ]; then
+                if [ -n "$optimize" ]; then
                     log+=("--logger=JUNIT,error,$log_directory/opt_$vm.xml")
                 else
                     log+=("--logger=JUNIT,error,$log_directory/noopt_$vm.xml")
@@ -150,8 +137,7 @@ do
     done
 done
 
-if [[ -n $CMDLINE_PID ]] && ! wait $CMDLINE_PID
-then
+if [[ -n $CMDLINE_PID ]] && ! wait $CMDLINE_PID; then
     printError "Commandline tests FAILED"
     CMDLINE_PID=
     exit 1

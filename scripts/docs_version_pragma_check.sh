@@ -36,96 +36,79 @@ source "${REPO_ROOT}/scripts/common_cmdline.sh"
 
 developmentVersion=$("$REPO_ROOT/scripts/get_version.sh")
 
-function versionGreater()
-{
+function versionGreater() {
     v1=$1
     v2=$2
     # shellcheck disable=SC2206
-    ver1=( ${v1//./ } )
+    ver1=(${v1//./ })
     # shellcheck disable=SC2206
-    ver2=( ${v2//./ } )
+    ver2=(${v2//./ })
 
-    if (( "${ver1[0]}" > "${ver2[0]}" ))
-    then
+    if (("${ver1[0]}" > "${ver2[0]}")); then
         return 0
-    elif (( "${ver1[0]}" == "${ver2[0]}" )) && (( "${ver1[1]}" > "${ver2[1]}" ))
-    then
+    elif (("${ver1[0]}" == "${ver2[0]}")) && (("${ver1[1]}" > "${ver2[1]}")); then
         return 0
-    elif (( "${ver1[0]}" == "${ver2[0]}" )) && (( "${ver1[1]}" == "${ver2[1]}" )) && (( "${ver1[2]}" > "${ver2[2]}" ))
-    then
+    elif (("${ver1[0]}" == "${ver2[0]}")) && (("${ver1[1]}" == "${ver2[1]}")) && (("${ver1[2]}" > "${ver2[2]}")); then
         return 0
     fi
     return 1
 }
 
-function versionEqual()
-{
-    if [[ "$1" == "$2" ]]
-    then
+function versionEqual() {
+    if [[ "$1" == "$2" ]]; then
         return 0
     fi
     return 1
 }
 
-function getAllAvailableVersions()
-{
+function getAllAvailableVersions() {
     allVersions=()
     local allListedVersions
-    mapfile -t allListedVersions <<< "$(
+    mapfile -t allListedVersions <<<"$(
         wget -q -O- https://binaries.soliditylang.org/bin/list.txt |
-        grep -Po '(?<=soljson-v)\d+.\d+.\d+(?=\+commit)' |
-        sort -V
+            grep -Po '(?<=soljson-v)\d+.\d+.\d+(?=\+commit)' |
+            sort -V
     )"
-    for listed in "${allListedVersions[@]}"
-    do
-        if versionGreater "$listed" "0.4.10"
-        then
-            allVersions+=( "$listed" )
+    for listed in "${allListedVersions[@]}"; do
+        if versionGreater "$listed" "0.4.10"; then
+            allVersions+=("$listed")
         fi
     done
 }
 
-function findMinimalVersion()
-{
+function findMinimalVersion() {
     local f=$1
     local greater=false
     local pragmaVersion
 
     # Get minimum compiler version defined by pragma
-    if (grep -Po '(?<=pragma solidity >=)\d+.\d+.\d+' "$f" >/dev/null)
-    then
+    if (grep -Po '(?<=pragma solidity >=)\d+.\d+.\d+' "$f" >/dev/null); then
         pragmaVersion="$(grep -Po '(?<=pragma solidity >=)\d+.\d+.\d+' "$f")"
         sign=">="
-    elif (grep -Po '(?<=pragma solidity \^)\d+.\d+.\d+' "$f" >/dev/null)
-    then
+    elif (grep -Po '(?<=pragma solidity \^)\d+.\d+.\d+' "$f" >/dev/null); then
         pragmaVersion="$(grep -Po '(?<=pragma solidity \^)\d+.\d+.\d+' "$f")"
         sign="^"
-    elif (grep -Po '(?<=pragma solidity >)\d+.\d+.\d+' "$f" >/dev/null)
-    then
+    elif (grep -Po '(?<=pragma solidity >)\d+.\d+.\d+' "$f" >/dev/null); then
         pragmaVersion="$(grep -Po '(?<=pragma solidity >)\d+.\d+.\d+' "$f")"
         sign=">"
-        greater=true;
+        greater=true
     else
         printError "No valid pragma statement in file. Skipping..."
         return
     fi
 
     version=""
-    for ver in "${allVersions[@]}" "$developmentVersion"
-    do
-        if versionGreater "$ver" "$pragmaVersion"
-        then
+    for ver in "${allVersions[@]}" "$developmentVersion"; do
+        if versionGreater "$ver" "$pragmaVersion"; then
             version="$ver"
             break
-        elif [[ "$greater" == false ]] && versionEqual "$ver" "$pragmaVersion"
-        then
+        elif [[ "$greater" == false ]] && versionEqual "$ver" "$pragmaVersion"; then
             version="$ver"
             break
         fi
     done
 
-    if [[ "$version" == "" ]]
-    then
+    if [[ "$version" == "" ]]; then
         printError "No release ${sign}${pragmaVersion} was listed in available releases!"
         exit 1
     fi
@@ -140,12 +123,10 @@ SOLTMPDIR=$(mktemp -d)
 
     getAllAvailableVersions
 
-    for f in *.sol
-    do
+    for f in *.sol; do
         # The contributors guide uses syntax tests, but we cannot
         # really handle them here.
-        if grep -E 'DeclarationError:|// ----' "$f" >/dev/null
-        then
+        if grep -E 'DeclarationError:|// ----' "$f" >/dev/null; then
             continue
         fi
         echo "$f"
@@ -153,9 +134,8 @@ SOLTMPDIR=$(mktemp -d)
         opts=()
         # We expect errors if explicitly stated, or if imports
         # are used (in the style guide)
-        if ( ! grep -E "This will not compile after" "$f" >/dev/null && \
-            grep -E "This will not compile|import \"" "$f" >/dev/null )
-        then
+        if (! grep -E "This will not compile after" "$f" >/dev/null &&
+            grep -E "This will not compile|import \"" "$f" >/dev/null); then
             opts=(--expect-errors)
         fi
 
@@ -163,12 +143,10 @@ SOLTMPDIR=$(mktemp -d)
         opts+=(--ignore-warnings)
 
         findMinimalVersion "$f"
-        if [[ "$version" == "" ]]
-        then
+        if [[ "$version" == "" ]]; then
             continue
         fi
-        if [[ "$version" == "$developmentVersion" ]]
-        then
+        if [[ "$version" == "$developmentVersion" ]]; then
             printWarning "Skipping unreleased development version $developmentVersion"
             continue
         fi
@@ -177,11 +155,9 @@ SOLTMPDIR=$(mktemp -d)
 
         solc_bin="solc-$version"
         echo "$solc_bin"
-        if [[ ! -f "$solc_bin" ]]
-        then
+        if [[ ! -f "$solc_bin" ]]; then
             echo "Downloading release from github..."
-            if wget -q "https://github.com/ethereum/solidity/releases/download/v$version/solc-static-linux" >/dev/null
-            then
+            if wget -q "https://github.com/ethereum/solidity/releases/download/v$version/solc-static-linux" >/dev/null; then
                 mv solc-static-linux "$solc_bin"
             else
                 printError "No release $version was found on github!"

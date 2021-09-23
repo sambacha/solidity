@@ -40,8 +40,7 @@
 
 set -ev
 
-if [ -z "$1" ]
-then
+if [ -z "$1" ]; then
     branch=develop
 else
     branch=$1
@@ -59,86 +58,78 @@ static_build_distribution=hirsute
 
 DISTRIBUTIONS="focal hirsute impish"
 
-if is_release
-then
+if is_release; then
     DISTRIBUTIONS="$DISTRIBUTIONS STATIC"
 fi
 
-for distribution in $DISTRIBUTIONS
-do
-cd /tmp/
-rm -rf "$distribution"
-mkdir "$distribution"
-cd "$distribution"
+for distribution in $DISTRIBUTIONS; do
+    cd /tmp/
+    rm -rf "$distribution"
+    mkdir "$distribution"
+    cd "$distribution"
 
-if [ "$distribution" = STATIC ]
-then
-    pparepo=ethereum-static
-    SMTDEPENDENCY=""
-    CMAKE_OPTIONS="-DSOLC_LINK_STATIC=On -DCMAKE_EXE_LINKER_FLAGS=-static"
-else
-    if is_release
-    then
-        pparepo=ethereum
+    if [ "$distribution" = STATIC ]; then
+        pparepo=ethereum-static
+        SMTDEPENDENCY=""
+        CMAKE_OPTIONS="-DSOLC_LINK_STATIC=On -DCMAKE_EXE_LINKER_FLAGS=-static"
     else
-        pparepo=ethereum-dev
-    fi
-    if [ "$distribution" = focal ]
-    then
-        SMTDEPENDENCY="libz3-static-dev,
+        if is_release; then
+            pparepo=ethereum
+        else
+            pparepo=ethereum-dev
+        fi
+        if [ "$distribution" = focal ]; then
+            SMTDEPENDENCY="libz3-static-dev,
             libcvc4-dev,
             "
-    elif [ "$distribution" = disco ]
-    then
-        SMTDEPENDENCY="libz3-static-dev,
+        elif [ "$distribution" = disco ]; then
+            SMTDEPENDENCY="libz3-static-dev,
             libcvc4-dev,
             "
-    else
-        SMTDEPENDENCY="libz3-static-dev,
+        else
+            SMTDEPENDENCY="libz3-static-dev,
             "
+        fi
+        CMAKE_OPTIONS=""
     fi
-    CMAKE_OPTIONS=""
-fi
-ppafilesurl=https://launchpad.net/~ethereum/+archive/ubuntu/${pparepo}/+files
+    ppafilesurl=https://launchpad.net/~ethereum/+archive/ubuntu/${pparepo}/+files
 
-# Fetch source
-git clone --depth 2 --recursive https://github.com/ethereum/solidity.git -b "$branch"
-mv solidity solc
+    # Fetch source
+    git clone --depth 2 --recursive https://github.com/ethereum/solidity.git -b "$branch"
+    mv solidity solc
 
-# Fetch jsoncpp dependency
-mkdir -p ./solc/deps/downloads/ 2>/dev/null || true
-wget -O ./solc/deps/downloads/jsoncpp-1.9.3.tar.gz https://github.com/open-source-parsers/jsoncpp/archive/1.9.3.tar.gz
-wget -O ./solc/deps/downloads/range-v3-0.11.0.tar.gz https://github.com/ericniebler/range-v3/archive/0.11.0.tar.gz
+    # Fetch jsoncpp dependency
+    mkdir -p ./solc/deps/downloads/ 2>/dev/null || true
+    wget -O ./solc/deps/downloads/jsoncpp-1.9.3.tar.gz https://github.com/open-source-parsers/jsoncpp/archive/1.9.3.tar.gz
+    wget -O ./solc/deps/downloads/range-v3-0.11.0.tar.gz https://github.com/ericniebler/range-v3/archive/0.11.0.tar.gz
 
-# Determine version
-cd solc
-version=$("$(dirname "$0")/get_version.sh")
-commithash=$(git rev-parse --short=8 HEAD)
-commitdate=$(git show --format=%ci HEAD | head -n 1 | cut - -b1-10 | sed -e 's/-0?/./' | sed -e 's/-0?/./')
+    # Determine version
+    cd solc
+    version=$("$(dirname "$0")/get_version.sh")
+    commithash=$(git rev-parse --short=8 HEAD)
+    commitdate=$(git show --format=%ci HEAD | head -n 1 | cut - -b1-10 | sed -e 's/-0?/./' | sed -e 's/-0?/./')
 
-echo "$commithash" > commit_hash.txt
-if is_release
-then
-    debversion="$version"
-    echo -n > prerelease.txt # proper release
-else
-    debversion="$version~develop-$commitdate-$commithash"
-fi
+    echo "$commithash" >commit_hash.txt
+    if is_release; then
+        debversion="$version"
+        echo -n >prerelease.txt # proper release
+    else
+        debversion="$version~develop-$commitdate-$commithash"
+    fi
 
-# gzip will create different tars all the time and we are not allowed
-# to upload the same file twice with different contents, so we only
-# create it once.
-if [ ! -e "/tmp/${packagename}_${debversion}.orig.tar.gz" ]
-then
-    tar --exclude .git -czf "/tmp/${packagename}_${debversion}.orig.tar.gz" .
-fi
-cp "/tmp/${packagename}_${debversion}.orig.tar.gz" ../
+    # gzip will create different tars all the time and we are not allowed
+    # to upload the same file twice with different contents, so we only
+    # create it once.
+    if [ ! -e "/tmp/${packagename}_${debversion}.orig.tar.gz" ]; then
+        tar --exclude .git -czf "/tmp/${packagename}_${debversion}.orig.tar.gz" .
+    fi
+    cp "/tmp/${packagename}_${debversion}.orig.tar.gz" ../
 
-# Create debian package information
+    # Create debian package information
 
-mkdir debian
-echo 9 > debian/compat
-cat <<EOF > debian/control
+    mkdir debian
+    echo 9 >debian/compat
+    cat <<EOF >debian/control
 Source: solc
 Section: science
 Priority: extra
@@ -165,7 +156,7 @@ Conflicts: libethereum (<= 1.2.9)
 Description: Solidity compiler.
  The commandline interface to the Solidity smart contract compiler.
 EOF
-cat <<EOF > debian/rules
+    cat <<EOF >debian/rules
 #!/usr/bin/make -f
 # -*- makefile -*-
 # Sample debian/rules that uses debhelper.
@@ -200,7 +191,7 @@ override_dh_shlibdeps:
 override_dh_auto_configure:
 	dh_auto_configure -- -DTESTS=OFF ${CMAKE_OPTIONS}
 EOF
-cat <<EOF > debian/copyright
+    cat <<EOF >debian/copyright
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: solc
 Source: https://github.com/ethereum/solidity
@@ -230,65 +221,62 @@ License: GPL-3.0+
  On Debian systems, the complete text of the GNU General
  Public License version 3 can be found in "/usr/share/common-licenses/GPL-3".
 EOF
-cat <<EOF > debian/changelog
+    cat <<EOF >debian/changelog
 solc (0.0.1-0ubuntu1) saucy; urgency=low
 
   * Initial release.
 
  -- Christian <build@ethereum.org>  Mon, 03 Feb 2016 14:50:20 +0000
 EOF
-echo docs > debian/docs
-mkdir debian/source
-echo "3.0 (quilt)" > debian/source/format
-chmod +x debian/rules
+    echo docs >debian/docs
+    mkdir debian/source
+    echo "3.0 (quilt)" >debian/source/format
+    chmod +x debian/rules
 
-versionsuffix=0ubuntu1~${distribution}
-# bump version / add entry to changelog
-EMAIL="$email" dch -v "1:${debversion}-${versionsuffix}" "git build of ${commithash}"
+    versionsuffix=0ubuntu1~${distribution}
+    # bump version / add entry to changelog
+    EMAIL="$email" dch -v "1:${debversion}-${versionsuffix}" "git build of ${commithash}"
 
+    # build source package
+    # If packages is rejected because original source is already present, add
+    # -sd to remove it from the .changes file
+    # -d disables the build dependencies check
+    debuild -S -d -sa -us -uc
 
-# build source package
-# If packages is rejected because original source is already present, add
-# -sd to remove it from the .changes file
-# -d disables the build dependencies check
-debuild -S -d -sa -us -uc
+    # prepare .changes file for Launchpad
+    if [ "$distribution" = STATIC ]; then
+        sed -i -e "s/UNRELEASED/${static_build_distribution}/" -e s/urgency=medium/urgency=low/ ../*.changes
+    else
+        sed -i -e "s/UNRELEASED/${distribution}/" -e s/urgency=medium/urgency=low/ ../*.changes
+    fi
 
-# prepare .changes file for Launchpad
-if [ "$distribution" = STATIC ]
-then
-    sed -i -e "s/UNRELEASED/${static_build_distribution}/" -e s/urgency=medium/urgency=low/ ../*.changes
-else
-    sed -i -e "s/UNRELEASED/${distribution}/" -e s/urgency=medium/urgency=low/ ../*.changes
-fi
+    # check if ubuntu already has the source tarball
+    (
+        cd ..
+        orig="${packagename}_${debversion}.orig.tar.gz"
+        # shellcheck disable=SC2012
+        orig_size=$(ls -l "$orig" | cut -d ' ' -f 5)
+        orig_sha1=$(sha1sum "$orig" | cut -d ' ' -f 1)
+        orig_sha256=$(sha256sum "$orig" | cut -d ' ' -f 1)
+        orig_md5=$(md5sum "$orig" | cut -d ' ' -f 1)
 
-# check if ubuntu already has the source tarball
-(
-cd ..
-orig="${packagename}_${debversion}.orig.tar.gz"
-# shellcheck disable=SC2012
-orig_size=$(ls -l "$orig" | cut -d ' ' -f 5)
-orig_sha1=$(sha1sum "$orig" | cut -d ' ' -f 1)
-orig_sha256=$(sha256sum "$orig" | cut -d ' ' -f 1)
-orig_md5=$(md5sum "$orig" | cut -d ' ' -f 1)
+        if wget --quiet -O "$orig-tmp" "$ppafilesurl/$orig"; then
+            echo "[WARN] Original tarball found in Ubuntu archive, using it instead"
+            mv "$orig-tmp" "$orig"
+            # shellcheck disable=SC2012
+            new_size=$(ls -l ./*.orig.tar.gz | cut -d ' ' -f 5)
+            new_sha1=$(sha1sum "$orig" | cut -d ' ' -f 1)
+            new_sha256=$(sha256sum "$orig" | cut -d ' ' -f 1)
+            new_md5=$(md5sum "$orig" | cut -d ' ' -f 1)
+            sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.dsc
+            sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.changes
+        fi
+    )
 
-if wget --quiet -O "$orig-tmp" "$ppafilesurl/$orig"
-then
-    echo "[WARN] Original tarball found in Ubuntu archive, using it instead"
-    mv "$orig-tmp" "$orig"
-    # shellcheck disable=SC2012
-    new_size=$(ls -l ./*.orig.tar.gz | cut -d ' ' -f 5)
-    new_sha1=$(sha1sum "$orig" | cut -d ' ' -f 1)
-    new_sha256=$(sha256sum "$orig" | cut -d ' ' -f 1)
-    new_md5=$(md5sum "$orig" | cut -d ' ' -f 1)
-    sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.dsc
-    sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.changes
-fi
-)
+    # sign the package
+    debsign --re-sign -k "${keyid}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
 
-# sign the package
-debsign --re-sign -k "${keyid}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
-
-# upload
-dput "${pparepo}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
+    # upload
+    dput "${pparepo}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
 
 done

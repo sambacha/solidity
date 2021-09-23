@@ -1,6 +1,8 @@
 # out-of-tree builds usually go here. This helps improving performance of uploading
 # the build context to the docker image build server
 /build
-
+.git
 # in-tree builds
 /deps
+.circleci/
+.github/

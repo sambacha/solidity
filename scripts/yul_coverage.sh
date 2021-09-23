@@ -56,95 +56,95 @@ set -e
 ROOT_DIR="$(dirname "$0")"/..
 
 for arg in "$@"; do
-  case "$arg" in
-  --no-stats) NO_STATS=1 ;;
-  --successful) SHOW_SUCCESSFUL=1 ;;
-  --internal-compiler-errors) SHOW_INTERNAL_COMPILER_ERRORS=1 ;;
-  --unimplemented-feature-errors) SHOW_UNIMPLEMENTED_FEATURE_ERRORS=1 ;;
-  --other-errors) SHOW_OTHER_ERRORS=1 ;;
-  --list-files) ONLY_LIST_FILES=1 ;;
-  *)
-    echo "Usage:"
-    echo "  $(basename "${0}") [--no-stats] [--successful] [--internal-compiler-errors] [--unimplemented-feature-errors] [--other-errors] [--list-files]"
-    echo "  --no-stats                     will not print the stats to stdout"
-    echo "  --successful                   print output of successful test-case compilations to stdout"
-    echo "  --internal-compiler-errors     print output of test-case compilations that resulted in"
-    echo "                                 internal compilation errors to stdout"
-    echo "  --unimplemented-feature-errors print output of test-case compilations that resulted in"
-    echo "                                 unimplemented feature errors to stdout"
-    echo "  --other-errors                 print output of test-case compilations that resulted in"
-    echo "                                 errors that where not internal compiler errors or unimplemented feature errors"
-    echo "                                 to stdout"
-    echo "  --list-files                   will not print the compiler output to stdout, it will just print the files"
-    echo "                                 e.g. './yul_coverage.sh --successful --list-files' will just return a list of"
-    echo "                                 files where it's compilation result was successful"
-    exit 0
-    ;;
-  esac
+    case "$arg" in
+    --no-stats) NO_STATS=1 ;;
+    --successful) SHOW_SUCCESSFUL=1 ;;
+    --internal-compiler-errors) SHOW_INTERNAL_COMPILER_ERRORS=1 ;;
+    --unimplemented-feature-errors) SHOW_UNIMPLEMENTED_FEATURE_ERRORS=1 ;;
+    --other-errors) SHOW_OTHER_ERRORS=1 ;;
+    --list-files) ONLY_LIST_FILES=1 ;;
+    *)
+        echo "Usage:"
+        echo "  $(basename "${0}") [--no-stats] [--successful] [--internal-compiler-errors] [--unimplemented-feature-errors] [--other-errors] [--list-files]"
+        echo "  --no-stats                     will not print the stats to stdout"
+        echo "  --successful                   print output of successful test-case compilations to stdout"
+        echo "  --internal-compiler-errors     print output of test-case compilations that resulted in"
+        echo "                                 internal compilation errors to stdout"
+        echo "  --unimplemented-feature-errors print output of test-case compilations that resulted in"
+        echo "                                 unimplemented feature errors to stdout"
+        echo "  --other-errors                 print output of test-case compilations that resulted in"
+        echo "                                 errors that where not internal compiler errors or unimplemented feature errors"
+        echo "                                 to stdout"
+        echo "  --list-files                   will not print the compiler output to stdout, it will just print the files"
+        echo "                                 e.g. './yul_coverage.sh --successful --list-files' will just return a list of"
+        echo "                                 files where it's compilation result was successful"
+        exit 0
+        ;;
+    esac
 done
 
 show_output_if() {
-  local VAR=${1}
-  if [ -n "${VAR}" ]; then
-    echo "${SOL_FILE}"
-    if [ -z "${ONLY_LIST_FILES}" ]; then
-      echo "${OUTPUT}"
-      echo ""
+    local VAR=${1}
+    if [ -n "${VAR}" ]; then
+        echo "${SOL_FILE}"
+        if [ -z "${ONLY_LIST_FILES}" ]; then
+            echo "${OUTPUT}"
+            echo ""
+        fi
     fi
-  fi
 }
 
 FAILED=()
 SUCCESS=()
 SOLC=${SOLC:-"$(command -v -- solc)"}
 if [ ! -f "${SOLC}" ]; then
-  echo "error: solc '${SOLC}' not found."
-  exit 1
+    echo "error: solc '${SOLC}' not found."
+    exit 1
 fi
 
 test_file() {
-  local SOL_FILE
-  local OUTPUT
-  SOL_FILE=${1}
+    local SOL_FILE
+    local OUTPUT
+    SOL_FILE=${1}
 
-  if OUTPUT=$("${SOLC}" --ir "${SOL_FILE}" 2>&1); then
-    SUCCESS+=("${SOL_FILE}")
-    show_output_if ${SHOW_SUCCESSFUL}
-  else
-    FAILED+=("${SOL_FILE}")
-    if [[ ${OUTPUT} == *"UnimplementedFeatureError"* ]]; then
-      UNIMPLEMENTED_FEATURE_ERRORS+=("${SOL_FILE}")
-      show_output_if ${SHOW_UNIMPLEMENTED_FEATURE_ERRORS}
-    elif [[ ${OUTPUT} == *"InternalCompilerError"* ]]; then
-      INTERNAL_COMPILER_ERRORS+=("${SOL_FILE}")
-      show_output_if ${SHOW_INTERNAL_COMPILER_ERRORS}
+    if OUTPUT=$("${SOLC}" --ir "${SOL_FILE}" 2>&1); then
+        SUCCESS+=("${SOL_FILE}")
+        show_output_if ${SHOW_SUCCESSFUL}
     else
-      OTHER_ERRORS+=("${SOL_FILE}")
-      show_output_if ${SHOW_OTHER_ERRORS}
+        FAILED+=("${SOL_FILE}")
+        if [[ ${OUTPUT} == *"UnimplementedFeatureError"* ]]; then
+            UNIMPLEMENTED_FEATURE_ERRORS+=("${SOL_FILE}")
+            show_output_if ${SHOW_UNIMPLEMENTED_FEATURE_ERRORS}
+        elif [[ ${OUTPUT} == *"InternalCompilerError"* ]]; then
+            INTERNAL_COMPILER_ERRORS+=("${SOL_FILE}")
+            show_output_if ${SHOW_INTERNAL_COMPILER_ERRORS}
+        else
+            OTHER_ERRORS+=("${SOL_FILE}")
+            show_output_if ${SHOW_OTHER_ERRORS}
+        fi
     fi
-  fi
 }
 
 # we only want to use files that do not contain errors or multi-source files.
 SOL_FILES=()
 while IFS='' read -r line; do
-  SOL_FILES+=("$line")
+    SOL_FILES+=("$line")
 done < <(
-  grep -riL -E \
-    "^\/\/ (DocstringParsing|Syntax|Type|Parser|Declaration)Error|^==== Source:" \
-    "${ROOT_DIR}/test/libsolidity/syntaxTests" \
-    "${ROOT_DIR}/test/libsolidity/semanticTests"
+    grep -riL -E \
+        "^\/\/ (DocstringParsing|Syntax|Type|Parser|Declaration)Error|^==== Source:" \
+        "${ROOT_DIR}/test/libsolidity/syntaxTests" \
+        "${ROOT_DIR}/test/libsolidity/semanticTests"
 )
 
 for SOL_FILE in "${SOL_FILES[@]}"; do
-  test_file "${SOL_FILE}"
+    test_file "${SOL_FILE}"
 done
 
 if [ -z "${NO_STATS}" ]; then
-  SUM=$((${#SUCCESS[@]} + ${#FAILED[@]}))
-  PERCENTAGE=$(echo "scale=4; ${#SUCCESS[@]} / ${SUM}" | bc)
-  echo "${#SUCCESS[@]} / ${SUM} = ${PERCENTAGE}"
-  echo "UnimplementedFeatureError(s): ${#UNIMPLEMENTED_FEATURE_ERRORS[@]}"
-  echo "InternalCompilerError(s): ${#INTERNAL_COMPILER_ERRORS[@]}"
-  echo "OtherError(s): ${#OTHER_ERRORS[@]}"
+    SUM=$((${#SUCCESS[@]} + ${#FAILED[@]}))
+    PERCENTAGE=$(echo "scale=4; ${#SUCCESS[@]} / ${SUM}" | bc)
+    echo "${#SUCCESS[@]} / ${SUM} = ${PERCENTAGE}"
+    echo "UnimplementedFeatureError(s): ${#UNIMPLEMENTED_FEATURE_ERRORS[@]}"
+    echo "InternalCompilerError(s): ${#INTERNAL_COMPILER_ERRORS[@]}"
+    echo "OtherError(s): ${#OTHER_ERRORS[@]}"
 fi

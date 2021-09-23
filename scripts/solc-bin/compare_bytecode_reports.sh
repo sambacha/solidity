@@ -36,16 +36,19 @@
 set -euo pipefail
 
 report_files="$(find . -type f -name 'report-*.txt')"
-[[ $report_files != "" ]] || { echo "No reports found in the working directory."; exit 0; }
+[[ $report_files != "" ]] || {
+    echo "No reports found in the working directory."
+    exit 0
+}
 
 echo "Available reports:"
 echo "$report_files"
 
 versions_in_report_names=$(
     echo "$report_files" |
-    sed -n -E 's/^\.\/[^\/]+\/report-(solc|soljson)-[0-9a-zA-Z-]+-v([0-9.]+\+commit\.[0-9a-f]+)(.[^.]+)?\.txt$/\2/p' |
-    sort -V |
-    uniq
+        sed -n -E 's/^\.\/[^\/]+\/report-(solc|soljson)-[0-9a-zA-Z-]+-v([0-9.]+\+commit\.[0-9a-f]+)(.[^.]+)?\.txt$/\2/p' |
+        sort -V |
+        uniq
 )
 
 num_failed_comparisons=0
@@ -53,12 +56,15 @@ for solidity_version_and_commit in $versions_in_report_names; do
     echo "Comparing reports for Solidity ${solidity_version_and_commit}:"
     mapfile -t report_files_for_version < <(
         echo "$report_files" |
-        sed -n -E '/^\.\/[^\/]+\/report-(solc|soljson)-[0-9a-zA-Z-]+-v'"${solidity_version_and_commit//\+/\\+}"'+(.[^.]+)?\.txt$/p'
+            sed -n -E '/^\.\/[^\/]+\/report-(solc|soljson)-[0-9a-zA-Z-]+-v'"${solidity_version_and_commit//\+/\\+}"'+(.[^.]+)?\.txt$/p'
     )
 
     diff --report-identical-files --brief --from-file "${report_files_for_version[@]}" || ((++num_failed_comparisons))
     echo
 done
 
-(( num_failed_comparisons == 0 )) || { echo "Found bytecode differences in ${num_failed_comparisons} versions"; exit 1; }
+((num_failed_comparisons == 0)) || {
+    echo "Found bytecode differences in ${num_failed_comparisons} versions"
+    exit 1
+}
 echo "No bytecode differences found."

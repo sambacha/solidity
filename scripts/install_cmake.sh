@@ -14,8 +14,8 @@ PREFIX="/usr/local"
 
 OS=$(uname -s)
 case $OS in
-Linux)  SHA256=f8cbec2abc433938bd9378b129d1d288bb33b8b5a277afe19644683af6e32a59;;
-Darwin) SHA256=7ec056d641b8cbea98b220efdcc99da1991758a370063dcac3a0cd388d6b30b6;;
+Linux) SHA256=f8cbec2abc433938bd9378b129d1d288bb33b8b5a277afe19644683af6e32a59 ;;
+Darwin) SHA256=7ec056d641b8cbea98b220efdcc99da1991758a370063dcac3a0cd388d6b30b6 ;;
 esac
 
 BIN=$PREFIX/bin

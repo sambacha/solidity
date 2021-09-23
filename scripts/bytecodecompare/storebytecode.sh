@@ -40,16 +40,18 @@ TMPDIR=$(mktemp -d)
 
     "$REPO_ROOT"/scripts/isolate_tests.py "$REPO_ROOT"/test/
 
-    if [[ "$SOLC_EMSCRIPTEN" = "On" ]]
-    then
+    if [[ "$SOLC_EMSCRIPTEN" = "On" ]]; then
         # npm install solc
         git clone --depth 1 https://github.com/ethereum/solc-js.git solc-js
-        ( cd solc-js; npm install )
+        (
+            cd solc-js
+            npm install
+        )
         cp "$REPO_ROOT/emscripten_build/libsolc/soljson.js" solc-js/
         cp "$REPO_ROOT/scripts/bytecodecompare/prepare_report.js" .
         echo "Running the compiler..."
         # shellcheck disable=SC2035
-        ./prepare_report.js *.sol > report.txt
+        ./prepare_report.js *.sol >report.txt
         echo "Finished running the compiler."
     else
         "$REPO_ROOT/scripts/bytecodecompare/prepare_report.py" "$BUILD_DIR/solc/solc"

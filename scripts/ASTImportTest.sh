@@ -38,15 +38,13 @@ fi
 # $2 any files needed to do so that might be in parent directories
 function testImportExportEquivalence {
     local nth_input_file="$1"
-    IFS=" " read -r -a all_input_files <<< "$2"
+    IFS=" " read -r -a all_input_files <<<"$2"
 
-    if $SOLC "$nth_input_file" "${all_input_files[@]}" > /dev/null 2>&1
-    then
+    if $SOLC "$nth_input_file" "${all_input_files[@]}" >/dev/null 2>&1; then
         # save exported json as expected result (silently)
-        $SOLC --combined-json ast,compact-format --pretty-json "$nth_input_file" "${all_input_files[@]}" > expected.json 2> /dev/null
+        $SOLC --combined-json ast,compact-format --pretty-json "$nth_input_file" "${all_input_files[@]}" >expected.json 2>/dev/null
         # import it, and export it again as obtained result (silently)
-        if ! $SOLC --import-ast --combined-json ast,compact-format --pretty-json expected.json > obtained.json 2> /dev/null
-        then
+        if ! $SOLC --import-ast --combined-json ast,compact-format --pretty-json expected.json >obtained.json 2>/dev/null; then
             # For investigating, use exit 1 here so the script stops at the
             # first failing test
             # exit 1
@@ -54,10 +52,8 @@ function testImportExportEquivalence {
             return 1
         fi
         DIFF="$(diff expected.json obtained.json)"
-        if [ "$DIFF" != "" ]
-        then
-            if [ "$DIFFVIEW" == "" ]
-            then
+        if [ "$DIFF" != "" ]; then
+            if [ "$DIFFVIEW" == "" ]; then
                 echo -e "ERROR: JSONS differ for $1: \n $DIFF \n"
                 echo "Expected:"
                 cat ./expected.json
@@ -87,8 +83,7 @@ WORKINGDIR=$PWD
 # bug. Since the test involves a malformed path, there is no point in running
 # AST tests on it. See https://github.com/boostorg/filesystem/issues/176
 # shellcheck disable=SC2044
-for solfile in $(find "$SYNTAXTESTS_DIR" "$ASTJSONTESTS_DIR" -name "*.sol" -and -not -name "boost_filesystem_bug.sol")
-do
+for solfile in $(find "$SYNTAXTESTS_DIR" "$ASTJSONTESTS_DIR" -name "*.sol" -and -not -name "boost_filesystem_bug.sol"); do
     echo -n "."
     # create a temporary sub-directory
     FILETMP=$(mktemp -d)
@@ -98,20 +93,16 @@ do
     OUTPUT=$("$SPLITSOURCES" "$solfile")
     SPLITSOURCES_RC=$?
     set -e
-    if [ ${SPLITSOURCES_RC} == 0 ]
-    then
+    if [ ${SPLITSOURCES_RC} == 0 ]; then
         # echo $OUTPUT
         NSOURCES=$((NSOURCES - 1))
-        for i in $OUTPUT;
-        do
+        for i in $OUTPUT; do
             testImportExportEquivalence "$i" "$OUTPUT"
             NSOURCES=$((NSOURCES + 1))
         done
-    elif [ ${SPLITSOURCES_RC} == 1 ]
-    then
+    elif [ ${SPLITSOURCES_RC} == 1 ]; then
         testImportExportEquivalence "$solfile"
-    elif [ ${SPLITSOURCES_RC} == 2 ]
-    then
+    elif [ ${SPLITSOURCES_RC} == 2 ]; then
         # The script will exit with return code 2, if an UnicodeDecodeError occurred.
         # This is the case if e.g. some tests are using invalid utf-8 sequences. We will ignore
         # these errors, but print the actual output of the script.
@@ -136,8 +127,7 @@ done
 
 echo ""
 
-if [ "$FAILED" = 0 ]
-then
+if [ "$FAILED" = 0 ]; then
     echo "SUCCESS: $TESTED syntaxTests passed, $FAILED failed, $UNCOMPILABLE could not be compiled ($NSOURCES sources total)."
 else
     echo "FAILURE: Out of $NSOURCES sources, $FAILED failed, ($UNCOMPILABLE could not be compiled)."

@@ -30,14 +30,13 @@ set -e
 SCRIPTDIR=$(dirname "$0")
 SCRIPTDIR=$(realpath "${SCRIPTDIR}")
 
-
 echo "Compiling all test contracts into bytecode..."
 TMPDIR=$(mktemp -d)
 (
     cd "${TMPDIR}"
     "${SCRIPTDIR}/isolate_tests.py" /src/test/
 
-    cat > solc <<EOF
+    cat >solc <<EOF
 #!/usr/bin/env node
 var process = require('process')
 var fs = require('fs')
@@ -93,6 +92,6 @@ for (var optimize of [false, true])
 }
 EOF
     chmod +x solc
-    ./solc -- *.sol > /tmp/report.txt
+    ./solc -- *.sol >/tmp/report.txt
 )
 rm -rf "$TMPDIR"

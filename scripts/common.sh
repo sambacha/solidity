@@ -19,22 +19,20 @@
 # (c) 2016-2019 solidity contributors.
 # ------------------------------------------------------------------------------
 
-if [ "$CIRCLECI" ]
-then
+if [ "$CIRCLECI" ]; then
     export TERM="${TERM:-xterm}"
     function printTask() { echo "$(tput bold)$(tput setaf 2)$1$(tput setaf 7)"; }
-    function printError() { >&2 echo "$(tput setaf 1)$1$(tput setaf 7)"; }
-    function printWarning() { >&2 echo "$(tput setaf 11)$1$(tput setaf 7)"; }
+    function printError() { echo >&2 "$(tput setaf 1)$1$(tput setaf 7)"; }
+    function printWarning() { echo >&2 "$(tput setaf 11)$1$(tput setaf 7)"; }
     function printLog() { echo "$(tput setaf 3)$1$(tput setaf 7)"; }
 else
     function printTask() { echo "$(tput bold)$(tput setaf 2)$1$(tput sgr0)"; }
-    function printError() { >&2 echo "$(tput setaf 1)$1$(tput sgr0)"; }
-    function printWarning() { >&2 echo "$(tput setaf 11)$1$(tput sgr0)"; }
+    function printError() { echo >&2 "$(tput setaf 1)$1$(tput sgr0)"; }
+    function printWarning() { echo >&2 "$(tput setaf 11)$1$(tput sgr0)"; }
     function printLog() { echo "$(tput setaf 3)$1$(tput sgr0)"; }
 fi
 
-safe_kill()
-{
+safe_kill() {
     local PID=${1}
     local NAME=${2:-${1}}
     local n=1

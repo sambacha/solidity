@@ -4,12 +4,12 @@
 # succeeding solc-js test runs for all compiler versions >= 0.5.0.
 
 if [ $# -lt 2 ]; then
-  echo "Usage: $0 [tagFilter] [outputDirectory] [options...]"
-  echo
-  echo "  [tagFilter] will be passed to "git tag --list" to filter the tags to be built."
-  echo "  [outputDirectory] will contain log files and the resulting soljson.js builds."
-  echo "  --retest will re-run tests and bytecode comparisons, even if soljson.js is already built."
-  exit 1
+    echo "Usage: $0 [tagFilter] [outputDirectory] [options...]"
+    echo
+    echo "  [tagFilter] will be passed to "git tag --list" to filter the tags to be built."
+    echo "  [outputDirectory] will contain log files and the resulting soljson.js builds."
+    echo "  --retest will re-run tests and bytecode comparisons, even if soljson.js is already built."
+    exit 1
 fi
 
 TAGS="$1"
@@ -20,8 +20,8 @@ SCRIPTDIR=$(dirname "$0")
 SCRIPTDIR=$(realpath "${SCRIPTDIR}")
 
 if [ ! -d "${OUTPUTDIR}" ]; then
-  echo "Output directory ${OUTPUTDIR} does not exist!."
-  exit 1
+    echo "Output directory ${OUTPUTDIR} does not exist!."
+    exit 1
 fi
 OUTPUTDIR=$(realpath "${OUTPUTDIR}")
 

@@ -9,7 +9,7 @@ SOLTEST_OPTIONS=()
 SOLIDITY_BUILD_DIR=${SOLIDITY_BUILD_DIR:-${REPO_ROOT}/build}
 
 usage() {
-	echo 2>&1 "
+    echo 2>&1 "
 Usage: $0 [options] [soltest-options]
 Runs BOOST C++ unit test program, soltest.
 
@@ -28,44 +28,43 @@ SOLIDITY_BUILD_DIR: Sets directory where test/soltest should be found.
 "
 }
 
-while [ $# -gt 0 ]
-do
-	case "$1" in
-		--debugger)
-			shift
-			DEBUGGER="$1"
-			USE_DEBUGGER=1
-			;;
-		--debug)
-			USE_DEBUGGER=1
-			;;
-		--boost-options)
-			shift
-			BOOST_OPTIONS+=("$1")
-			;;
-		--help)
-			usage
-			exit 0
-			;;
-		--run_test | -t )
-			shift
-			BOOST_OPTIONS+=(-t "$1")
-			;;
-		--show-progress | -p)
-			BOOST_OPTIONS+=("$1")
-			;;
-		*)
-			SOLTEST_OPTIONS+=("$1")
-			;;
-	esac
-	shift
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --debugger)
+        shift
+        DEBUGGER="$1"
+        USE_DEBUGGER=1
+        ;;
+    --debug)
+        USE_DEBUGGER=1
+        ;;
+    --boost-options)
+        shift
+        BOOST_OPTIONS+=("$1")
+        ;;
+    --help)
+        usage
+        exit 0
+        ;;
+    --run_test | -t)
+        shift
+        BOOST_OPTIONS+=(-t "$1")
+        ;;
+    --show-progress | -p)
+        BOOST_OPTIONS+=("$1")
+        ;;
+    *)
+        SOLTEST_OPTIONS+=("$1")
+        ;;
+    esac
+    shift
 done
 
 SOLTEST_COMMAND=("${SOLIDITY_BUILD_DIR}/test/soltest" "${BOOST_OPTIONS[@]}" -- --testpath "${REPO_ROOT}/test" "${SOLTEST_OPTIONS[@]}")
 
 if [ "$USE_DEBUGGER" -ne "0" ]; then
-	# shellcheck disable=SC2086
-	exec ${DEBUGGER} "${SOLTEST_COMMAND[@]}"
+    # shellcheck disable=SC2086
+    exec ${DEBUGGER} "${SOLTEST_COMMAND[@]}"
 else
-	exec "${SOLTEST_COMMAND[@]}"
+    exec "${SOLTEST_COMMAND[@]}"
 fi

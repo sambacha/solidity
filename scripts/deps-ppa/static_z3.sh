@@ -29,39 +29,37 @@ version=4.8.12
 
 DISTRIBUTIONS="focal groovy hirsute"
 
-for distribution in $DISTRIBUTIONS
-do
-cd /tmp/
-rm -rf "$distribution"
-mkdir "$distribution"
-cd "$distribution"
+for distribution in $DISTRIBUTIONS; do
+    cd /tmp/
+    rm -rf "$distribution"
+    mkdir "$distribution"
+    cd "$distribution"
 
-pparepo=cpp-build-deps
-ppafilesurl=https://launchpad.net/~ethereum/+archive/ubuntu/${pparepo}/+files
+    pparepo=cpp-build-deps
+    ppafilesurl=https://launchpad.net/~ethereum/+archive/ubuntu/${pparepo}/+files
 
-# Fetch source
-git clone --branch z3-${version} https://github.com/Z3Prover/z3.git
-cd z3
+    # Fetch source
+    git clone --branch z3-${version} https://github.com/Z3Prover/z3.git
+    cd z3
 
-debversion="${version}"
+    debversion="${version}"
 
-CMAKE_OPTIONS="-DZ3_BUILD_LIBZ3_SHARED=OFF -DCMAKE_BUILD_TYPE=Release"
+    CMAKE_OPTIONS="-DZ3_BUILD_LIBZ3_SHARED=OFF -DCMAKE_BUILD_TYPE=Release"
 
-# gzip will create different tars all the time and we are not allowed
-# to upload the same file twice with different contents, so we only
-# create it once.
-if [ ! -e /tmp/${packagename}_${debversion}.orig.tar.gz ]
-then
-    tar --exclude .git -czf /tmp/${packagename}_${debversion}.orig.tar.gz .
-fi
-cp /tmp/${packagename}_${debversion}.orig.tar.gz ../
+    # gzip will create different tars all the time and we are not allowed
+    # to upload the same file twice with different contents, so we only
+    # create it once.
+    if [ ! -e /tmp/${packagename}_${debversion}.orig.tar.gz ]; then
+        tar --exclude .git -czf /tmp/${packagename}_${debversion}.orig.tar.gz .
+    fi
+    cp /tmp/${packagename}_${debversion}.orig.tar.gz ../
 
-# Create debian package information
+    # Create debian package information
 
-mkdir debian
-echo 9 > debian/compat
-# TODO: the Z3 packages have different build dependencies
-cat <<EOF > debian/control
+    mkdir debian
+    echo 9 >debian/compat
+    # TODO: the Z3 packages have different build dependencies
+    cat <<EOF >debian/control
 Source: z3-static
 Section: science
 Priority: extra
@@ -110,7 +108,7 @@ Description: theorem prover from Microsoft Research - development files (static 
  .
  This package can be used to invoke Z3 via its C++ API.
 EOF
-cat <<EOF > debian/rules
+    cat <<EOF >debian/rules
 #!/usr/bin/make -f
 # -*- makefile -*-
 # Sample debian/rules that uses debhelper.
@@ -144,15 +142,15 @@ override_dh_auto_configure:
 override_dh_auto_install:
 	dh_auto_install --destdir debian/tmp
 EOF
-cat <<EOF > debian/libz3-static-dev.install
+    cat <<EOF >debian/libz3-static-dev.install
 usr/include/*
 usr/lib/*/libz3.a
 usr/lib/*/cmake/z3/*
 EOF
-cat <<EOF > debian/z3-static.install
+    cat <<EOF >debian/z3-static.install
 usr/bin/z3
 EOF
-cat <<EOF > debian/copyright
+    cat <<EOF >debian/copyright
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: z3
 Source: https://github.com/Z3Prover/z3
@@ -197,57 +195,56 @@ This program is free software: you can redistribute it and/or modify
  On Debian systems, the complete text of the GNU General
  Public License version 3 can be found in "/usr/share/common-licenses/GPL-3".
 EOF
-cat <<EOF > debian/changelog
+    cat <<EOF >debian/changelog
 z3-static (0.0.1-1ubuntu0) saucy; urgency=low
 
   * Initial release.
 
  -- Daniel <daniel@ekpyron.org>  Mon, 03 Jun 2019 14:50:20 +0000
 EOF
-mkdir debian/source
-echo "3.0 (quilt)" > debian/source/format
-chmod +x debian/rules
+    mkdir debian/source
+    echo "3.0 (quilt)" >debian/source/format
+    chmod +x debian/rules
 
-versionsuffix=1ubuntu0~${distribution}
-EMAIL="$email" dch -v "1:${debversion}-${versionsuffix}" "build of ${version}"
+    versionsuffix=1ubuntu0~${distribution}
+    EMAIL="$email" dch -v "1:${debversion}-${versionsuffix}" "build of ${version}"
 
-# build source package
-# If packages is rejected because original source is already present, add
-# -sd to remove it from the .changes file
-# -d disables the build dependencies check
-debuild -S -d -sa -us -uc
+    # build source package
+    # If packages is rejected because original source is already present, add
+    # -sd to remove it from the .changes file
+    # -d disables the build dependencies check
+    debuild -S -d -sa -us -uc
 
-# prepare .changes file for Launchpad
-sed -i -e "s/UNRELEASED/${distribution}/" -e s/urgency=medium/urgency=low/ ../*.changes
+    # prepare .changes file for Launchpad
+    sed -i -e "s/UNRELEASED/${distribution}/" -e s/urgency=medium/urgency=low/ ../*.changes
 
-# check if ubuntu already has the source tarball
-(
-cd ..
-orig="${packagename}_${debversion}.orig.tar.gz"
-# shellcheck disable=SC2012
-orig_size=$(ls -l "$orig" | cut -d ' ' -f 5)
-orig_sha1=$(sha1sum $orig | cut -d ' ' -f 1)
-orig_sha256=$(sha256sum $orig | cut -d ' ' -f 1)
-orig_md5=$(md5sum $orig | cut -d ' ' -f 1)
+    # check if ubuntu already has the source tarball
+    (
+        cd ..
+        orig="${packagename}_${debversion}.orig.tar.gz"
+        # shellcheck disable=SC2012
+        orig_size=$(ls -l "$orig" | cut -d ' ' -f 5)
+        orig_sha1=$(sha1sum $orig | cut -d ' ' -f 1)
+        orig_sha256=$(sha256sum $orig | cut -d ' ' -f 1)
+        orig_md5=$(md5sum $orig | cut -d ' ' -f 1)
 
-if wget --quiet -O $orig-tmp "$ppafilesurl/$orig"
-then
-    echo "[WARN] Original tarball found in Ubuntu archive, using it instead"
-    mv $orig-tmp $orig
-    # shellcheck disable=SC2012
-    new_size=$(ls -l ./*.orig.tar.gz | cut -d ' ' -f 5)
-    new_sha1=$(sha1sum $orig | cut -d ' ' -f 1)
-    new_sha256=$(sha256sum $orig | cut -d ' ' -f 1)
-    new_md5=$(md5sum $orig | cut -d ' ' -f 1)
-    sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.dsc
-    sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.changes
-fi
-)
+        if wget --quiet -O $orig-tmp "$ppafilesurl/$orig"; then
+            echo "[WARN] Original tarball found in Ubuntu archive, using it instead"
+            mv $orig-tmp $orig
+            # shellcheck disable=SC2012
+            new_size=$(ls -l ./*.orig.tar.gz | cut -d ' ' -f 5)
+            new_sha1=$(sha1sum $orig | cut -d ' ' -f 1)
+            new_sha256=$(sha256sum $orig | cut -d ' ' -f 1)
+            new_md5=$(md5sum $orig | cut -d ' ' -f 1)
+            sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.dsc
+            sed -i -e "s,$orig_sha1,$new_sha1,g" -e "s,$orig_sha256,$new_sha256,g" -e "s,$orig_size,$new_size,g" -e "s,$orig_md5,$new_md5,g" ./*.changes
+        fi
+    )
 
-# sign the package
-debsign --re-sign -k "${keyid}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
+    # sign the package
+    debsign --re-sign -k "${keyid}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
 
-# upload
-dput "${pparepo}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
+    # upload
+    dput "${pparepo}" "../${packagename}_${debversion}-${versionsuffix}_source.changes"
 
 done

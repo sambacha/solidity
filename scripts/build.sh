@@ -11,7 +11,7 @@ else
 fi
 
 if [[ "$(git tag --points-at HEAD 2>/dev/null)" == v* ]]; then
-	touch "${ROOTDIR}/prerelease.txt"
+    touch "${ROOTDIR}/prerelease.txt"
 fi
 
 mkdir -p "${BUILDDIR}"
@@ -21,6 +21,6 @@ cmake .. -DCMAKE_BUILD_TYPE="$BUILD_TYPE" "${@:2}"
 make -j2
 
 if [[ "${CI}" == "" ]]; then
-	echo "Installing ..."
-	sudo make install
+    echo "Installing ..."
+    sudo make install
 fi

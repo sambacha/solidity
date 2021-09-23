@@ -50,18 +50,17 @@
 # FIXME: Can't use set -u because the old Bash on macOS treats empty arrays as unbound variables
 set -eo pipefail
 
-die()
-{
+die() {
     # shellcheck disable=SC2059
-    >&2 printf "ERROR: $1\n" "${@:2}"
+    printf >&2 "ERROR: $1\n" "${@:2}"
     exit 1
 }
 
-get_reported_solc_version()
-{
+get_reported_solc_version() {
     local solc_binary="$1"
 
-    local version_banner; version_banner=$("$solc_binary" --version)
+    local version_banner
+    version_banner=$("$solc_binary" --version)
 
     if [[ ! $(echo "$version_banner" | head -n 1) =~ ^solc,.*$ ]]; then
         die "%s\nFULL OUTPUT:\n" "Invalid format of --version output" "$version_banner"
@@ -70,8 +69,7 @@ get_reported_solc_version()
     echo "$version_banner" | tail -n 1 | sed -n -E 's/^Version: (.*)$/\1/p'
 }
 
-validate_reported_version()
-{
+validate_reported_version() {
     local reported_version="$1"
     local expected_version_and_commit="$2"
 
@@ -79,9 +77,10 @@ validate_reported_version()
         die "Version '%s' reported by the '%s' binary indicates that it was built from modified source." "$reported_version" "$expected_version_and_commit"
     fi
 
-    local actual_version_and_commit; actual_version_and_commit=$(
+    local actual_version_and_commit
+    actual_version_and_commit=$(
         echo "$reported_version" |
-        sed -E 's/^[[:space:]]*([0-9.]+\+commit\.[0-9a-f]+)\..+\..+$/\1/'
+            sed -E 's/^[[:space:]]*([0-9.]+\+commit\.[0-9a-f]+)\..+\..+$/\1/'
     )
 
     if [[ $actual_version_and_commit != "$expected_version_and_commit" ]]; then
@@ -91,7 +90,7 @@ validate_reported_version()
     echo "Binary for version ${expected_version_and_commit} reports correct version."
 }
 
-(( $# == 5 )) || die "ERROR: Not enough arguments."
+(($# == 5)) || die "ERROR: Not enough arguments."
 
 platform="$1"
 base_ref="$2"
@@ -115,9 +114,9 @@ echo "Commit range: ${base_ref}..${top_ref}"
 
 modified_release_versions=$(
     git diff --name-only "${base_ref}" "${top_ref}" |
-    sed -n -E 's/^[^\/]+\/(solc|soljson)-[0-9a-zA-Z-]+-v([0-9.]+)\+commit\.[0-9a-f]+(.[^.]+)?$/\2/p' |
-    sort -V |
-    uniq
+        sed -n -E 's/^[^\/]+\/(solc|soljson)-[0-9a-zA-Z-]+-v([0-9.]+)\+commit\.[0-9a-f]+(.[^.]+)?$/\2/p' |
+        sort -V |
+        uniq
 )
 echo "Release versions modified in the commit range:"
 echo "$modified_release_versions"
@@ -155,7 +154,7 @@ for binary_name in $platform_binaries; do
                 "$solidity_version_and_commit"
 
             # shellcheck disable=SC2035
-            ./prepare_report.js --strip-smt-pragmas *.sol > "${report_dir}/report-${binary_name}.txt"
+            ./prepare_report.js --strip-smt-pragmas *.sol >"${report_dir}/report-${binary_name}.txt"
         else
             yul_optimizer_flags=()
             if [[ $solidity_version == 0.6.0 ]] || [[ $solidity_version == 0.6.1 ]]; then
