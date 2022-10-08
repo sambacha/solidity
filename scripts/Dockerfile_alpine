@@ -1,5 +1,24 @@
-FROM alpine
+# syntax=docker/dockerfile:1.4
+FROM alpine:3.16.2@sha256:1304f174557314a7ed9eddb4eab12fed12cb0cd9809e4c28f29af86979a3c870
+
 MAINTAINER chriseth <chris@ethereum.org>
 
+RUN addgroup -g 10001 -S nonroot && adduser -u 10000 -S -G nonroot -h /home/nonroot nonroot
+
 COPY upload/solc-static-linux /usr/local/bin/solc
+
+USER nonroot
+
 ENTRYPOINT ["/usr/local/bin/solc"]
+CMD []
+
+ARG COMMIT=""
+ARG VERSION=""
+ARG BUILDNUM=""
+
+LABEL org.label-schema.build-date=$BUILDNUM \
+      org.label-schema.name="Solidity" \
+      org.label-schema.description="Static Linux Solidity Compiler Binary" \
+      org.label-schema.vcs-ref=$COMMIT \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
