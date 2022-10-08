@@ -1,4 +1,10 @@
-FROM alpine AS build
+# syntax=docker/dockerfile:1.4
+
+ARG BUILD_DATE=""
+ARG VCS_REF=""
+ARG VERSION=""
+
+FROM alpine:3.16.2 AS build
 MAINTAINER chriseth <chris@ethereum.org>
 #Official solidity docker image
 
@@ -6,7 +12,10 @@ MAINTAINER chriseth <chris@ethereum.org>
 WORKDIR /solidity
 
 # Build dependencies
-RUN apk update && apk add boost-dev boost-static build-base cmake git
+RUN set -eux; \
+     apk update; \
+     apk --no-cache add \
+     boost-dev boost-static build-base cmake git;
 
 #Copy working directory on travis to the image
 COPY / $WORKDIR
@@ -31,8 +40,19 @@ RUN make solc \
             }                                              \
         }                                                  \
     }")
+
 RUN strip solc/solc
 
 FROM scratch
 COPY --from=build /solidity/solc/solc /usr/bin/solc
 ENTRYPOINT ["/usr/bin/solc"]
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="Solidity" \
+      org.label-schema.description="Solidity Compiler" \
+      org.label-schema.url="https://soliditylang.org" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/etereum/solidityy.git" \
+      org.label-schema.vendor="Ethereum" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
